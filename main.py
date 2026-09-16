@@ -25,15 +25,18 @@ DATA_URL = "https://raw.githubusercontent.com/greatsong/modudata/main/data/kobis
 def load_data():
     df = pd.read_csv(DATA_URL)
 
-    # 날짜를 실제 날짜 형식으로 변환
+    # 날짜 열을 실제 날짜 형식으로 변환
     df["날짜"] = pd.to_datetime(
         df["날짜"].astype(str),
         format="%Y%m%d"
     )
 
-    # 숫자 열 변환
+    # 숫자 열을 숫자형으로 변환
     for col in ["일관객", "누적관객", "스크린수", "상영횟수"]:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
+        df[col] = pd.to_numeric(
+            df[col],
+            errors="coerce"
+        )
 
     return df
 
@@ -43,10 +46,17 @@ df = load_data()
 
 # ========================================
 # 그래프 1
+# 영화별 날짜별 일관객 변화
 # ========================================
 st.header("그래프 1. 영화별 일관객 변화")
 
-movie_list = sorted(df["영화명"].dropna().unique())
+st.write(
+    "영화를 선택하면 해당 영화의 날짜별 일관객 수 변화를 볼 수 있습니다."
+)
+
+movie_list = sorted(
+    df["영화명"].dropna().unique()
+)
 
 selected_movie = st.selectbox(
     "영화를 선택하세요",
@@ -84,32 +94,61 @@ fig1.update_layout(
     yaxis_title="일관객 수 (명)"
 )
 
-st.plotly_chart(fig1, use_container_width=True)
+st.plotly_chart(
+    fig1,
+    use_container_width=True
+)
 
 st.markdown("**이 그래프로 알 수 있는 것**")
-st.info("여기에 이 그래프로 알 수 있는 내용을 직접 작성하세요.")
+st.info(
+    "여기에 이 그래프로 알 수 있는 내용을 직접 작성하세요."
+)
 
 
 # ========================================
 # 그래프 2
+# 일관객 합계가 가장 큰 영화 5편
 # ========================================
 st.divider()
 
 st.header("그래프 2. 일관객 합계가 가장 큰 영화 5편")
 
-movie_totals = (
-    df.groupby("영화명", as_index=False)["일관객"]
-    .sum()
-    .sort_values("일관객", ascending=False)
+st.write(
+    "전체 기간의 일관객 합계를 기준으로 상위 5편을 골라 "
+    "날짜별 일관객 변화를 비교합니다."
 )
 
-top5_movies = movie_totals.head(5)["영화명"].tolist()
+# 영화별 일관객 합계
+movie_totals = (
+    df.groupby(
+        "영화명",
+        as_index=False
+    )["일관객"]
+    .sum()
+    .sort_values(
+        "일관객",
+        ascending=False
+    )
+)
 
-top5_df = df[df["영화명"].isin(top5_movies)].copy()
+# 상위 5편
+top5_movies = (
+    movie_totals
+    .head(5)["영화명"]
+    .tolist()
+)
+
+# 상위 5편의 날짜별 데이터
+top5_df = df[
+    df["영화명"].isin(top5_movies)
+].copy()
 
 top5_df = (
     top5_df
-    .groupby(["날짜", "영화명"], as_index=False)["일관객"]
+    .groupby(
+        ["날짜", "영화명"],
+        as_index=False
+    )["일관객"]
     .sum()
     .sort_values("날짜")
 )
@@ -144,27 +183,47 @@ fig2.update_layout(
     legend_title="영화"
 )
 
-st.plotly_chart(fig2, use_container_width=True)
+st.plotly_chart(
+    fig2,
+    use_container_width=True
+)
 
 st.markdown("**이 그래프로 알 수 있는 것**")
-st.info("여기에 이 그래프로 알 수 있는 내용을 직접 작성하세요.")
+st.info(
+    "여기에 이 그래프로 알 수 있는 내용을 직접 작성하세요."
+)
 
 
 # ========================================
 # 그래프 3
+# 날짜별 10위권 일관객 합계
 # ========================================
 st.divider()
 
 st.header("그래프 3. 날짜별 10위권 일관객 합계")
 
+st.write(
+    "각 날짜의 10위권 영화 일관객을 모두 더해 "
+    "날짜별 전체 관객 규모의 변화를 살펴봅니다."
+)
+
+# 날짜별 10위권 일관객 합계
 daily_total = (
-    df.groupby("날짜", as_index=False)["일관객"]
+    df.groupby(
+        "날짜",
+        as_index=False
+    )["일관객"]
     .sum()
     .sort_values("날짜")
 )
 
-top3_days = daily_total.nlargest(3, "일관객")
+# 일관객 합계가 가장 큰 3일
+top3_days = daily_total.nlargest(
+    3,
+    "일관객"
+)
 
+# 영역 그래프
 fig3 = px.area(
     daily_total,
     x="날짜",
@@ -184,7 +243,9 @@ fig3.update_traces(
     )
 )
 
+# 합계가 가장 큰 3일 표시
 for _, row in top3_days.iterrows():
+
     fig3.add_annotation(
         x=row["날짜"],
         y=row["일관객"],
@@ -203,35 +264,57 @@ fig3.update_layout(
     yaxis_title="10위권 일관객 합계 (명)"
 )
 
-st.plotly_chart(fig3, use_container_width=True)
+st.plotly_chart(
+    fig3,
+    use_container_width=True
+)
 
 st.markdown("**이 그래프로 알 수 있는 것**")
-st.info("여기에 이 그래프로 알 수 있는 내용을 직접 작성하세요.")
+st.info(
+    "여기에 이 그래프를 보고 알 수 있는 내용을 직접 작성하세요."
+)
 
 
 # ========================================
 # 그래프 4
+# 영화별 기간 일관객 TOP 10
 # ========================================
 st.divider()
 
 st.header("그래프 4. 영화별 기간 일관객 TOP 10")
 
+st.write(
+    "이 기간 동안 영화별 일관객을 모두 더해 "
+    "관객이 가장 많았던 영화 10편을 비교합니다."
+)
+
+# ----------------------------------------
+# 영화별 일관객 합계와 10위권에 든 날수
+# ----------------------------------------
 movie_summary = (
     df.groupby("영화명")
     .agg(
         일관객합계=("일관객", "sum"),
-        10위권_날수=("날짜", "nunique")
+        top10_days=("날짜", "nunique"),
     )
     .reset_index()
 )
 
+# 일관객 합계가 많은 순서로 TOP 10
 top10_movies = (
     movie_summary
-    .sort_values("일관객합계", ascending=False)
+    .sort_values(
+        "일관객합계",
+        ascending=False
+    )
     .head(10)
-    .sort_values("일관객합계", ascending=True)
+    .sort_values(
+        "일관객합계",
+        ascending=True
+    )
 )
 
+# 가로 막대그래프
 fig4 = px.bar(
     top10_movies,
     x="일관객합계",
@@ -242,9 +325,10 @@ fig4 = px.bar(
         "일관객합계": "기간 일관객 합계",
         "영화명": "영화"
     },
-    custom_data=["10위권_날수"]
+    custom_data=["top10_days"]
 )
 
+# 마우스를 올렸을 때 표시되는 정보
 fig4.update_traces(
     hovertemplate=(
         "영화: %{y}"
@@ -259,28 +343,38 @@ fig4.update_layout(
     yaxis_title="영화"
 )
 
-st.plotly_chart(fig4, use_container_width=True)
+st.plotly_chart(
+    fig4,
+    use_container_width=True
+)
 
 st.markdown("**이 그래프로 알 수 있는 것**")
-st.info("여기에 이 그래프로 알 수 있는 내용을 직접 작성하세요.")
+st.info(
+    "여기에 이 그래프를 보고 알 수 있는 내용을 직접 작성하세요."
+)
 
 
 # ========================================
 # 그래프 5
+# 월 × 요일별 일관객 합계 히트맵
 # ========================================
 st.divider()
 
 st.header("그래프 5. 월 × 요일별 일관객 합계")
 
 st.write(
-    "월과 요일별로 10위권 영화의 일관객 합계를 비교합니다."
+    "날짜에서 월과 요일을 뽑아 "
+    "월별·요일별 10위권 일관객 합계를 비교합니다."
 )
 
-# 날짜에서 월과 요일 추출
+# 날짜에서 월 추출
 heatmap_df = df.copy()
 
-heatmap_df["월"] = heatmap_df["날짜"].dt.month
+heatmap_df["월"] = (
+    heatmap_df["날짜"].dt.month
+)
 
+# 요일 이름
 weekday_names = {
     0: "월요일",
     1: "화요일",
@@ -300,12 +394,14 @@ heatmap_df["요일"] = (
 # 월 × 요일별 일관객 합계
 heatmap_data = (
     heatmap_df
-    .groupby(["월", "요일"])["일관객"]
+    .groupby(
+        ["월", "요일"]
+    )["일관객"]
     .sum()
     .reset_index()
 )
 
-# 요일을 월요일 → 일요일 순서로 고정
+# 요일 순서
 weekday_order = [
     "월요일",
     "화요일",
@@ -360,19 +456,30 @@ fig5.update_layout(
     coloraxis_colorbar_title="일관객"
 )
 
-st.plotly_chart(fig5, use_container_width=True)
+st.plotly_chart(
+    fig5,
+    use_container_width=True
+)
 
 st.markdown("**이 그래프로 알 수 있는 것**")
-st.info("여기에 이 그래프로 알 수 있는 내용을 직접 작성하세요.")
+st.info(
+    "여기에 이 그래프를 보고 알 수 있는 내용을 직접 작성하세요."
+)
 
 
 # ========================================
-# 그래프 6 - 다음 그래프를 위한 공간
+# 그래프 6
+# 다음 그래프를 위한 공간
 # ========================================
 st.divider()
 
 st.header("그래프 6")
-st.write("다음 그래프를 추가할 공간입니다.")
+
+st.write(
+    "다음 그래프를 추가할 공간입니다."
+)
 
 st.markdown("**이 그래프로 알 수 있는 것**")
-st.info("여기에 내용을 작성하세요.")
+st.info(
+    "여기에 내용을 작성하세요."
+)
